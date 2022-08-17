@@ -59,6 +59,49 @@ struct StringCallback
   }
 };
 
+TEST(RealtimePublisher, rt_publish_constructor_publisher)
+{
+    rclcpp::init(0, nullptr);
+    const size_t ATTEMPTS = 10;
+    const std::chrono::milliseconds DELAY(250);
+
+    const char * expected_msg = "Hello World";
+    auto node = std::make_shared<rclcpp::Node>("construct_move_destruct");
+    rclcpp::QoS qos(10);
+    qos.reliable().transient_local();
+    auto pub = node->create_publisher<StringMsg>("~/rt_publish", qos);
+    RealtimePublisher<StringMsg> rt_pub(pub);
+    rclcpp::shutdown();
+}
+
+TEST(RealtimePublisher, rt_publish_constructor_qos)
+{
+    rclcpp::init(0, nullptr);
+    const size_t ATTEMPTS = 10;
+    const std::chrono::milliseconds DELAY(250);
+
+    const char * expected_msg = "Hello World";
+    auto node = std::make_shared<rclcpp::Node>("construct_move_destruct");
+    rclcpp::QoS qos(10);
+    qos.reliable().transient_local();
+    RealtimePublisher<StringMsg> rt_pub(node, "~/rt_publish", qos);
+    rclcpp::shutdown();
+}
+
+TEST(RealtimePublisher, rt_publish_constructor_depth)
+{
+    rclcpp::init(0, nullptr);
+    const size_t ATTEMPTS = 10;
+    const std::chrono::milliseconds DELAY(250);
+
+    const char * expected_msg = "Hello World";
+    auto node = std::make_shared<rclcpp::Node>("construct_move_destruct");;
+    RealtimePublisher<StringMsg> rt_pub(node, "~/rt_publish", 10);
+    rclcpp::shutdown();
+}
+
+
+
 TEST(RealtimePublisher, rt_publish)
 {
   rclcpp::init(0, nullptr);
@@ -69,8 +112,7 @@ TEST(RealtimePublisher, rt_publish)
   auto node = std::make_shared<rclcpp::Node>("construct_move_destruct");
   rclcpp::QoS qos(10);
   qos.reliable().transient_local();
-  auto pub = node->create_publisher<StringMsg>("~/rt_publish", qos);
-  RealtimePublisher<StringMsg> rt_pub(pub);
+  RealtimePublisher<StringMsg> rt_pub(node, "~/rt_publish", qos);
   // publish a latched message
   bool lock_is_held = rt_pub.trylock();
   for (size_t i = 0; i < ATTEMPTS && !lock_is_held; ++i) {

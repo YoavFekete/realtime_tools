@@ -48,18 +48,40 @@
 
 #include "rclcpp/publisher.hpp"
 
+
 namespace realtime_tools
 {
 
-template<class Msg>
+template<
+    typename Msg,
+    typename AllocT = std::allocator<void>>
 class RealtimePublisher
 {
 private:
-  using PublisherSharedPtr = typename rclcpp::Publisher<Msg>::SharedPtr;
+  using PublisherSharedPtr = typename rclcpp::Publisher<Msg,AllocT>::SharedPtr;
 
 public:
   /// The msg_ variable contains the data that will get published on the ROS topic.
   Msg msg_;
+
+
+/**
+   * @brief Constructor for the realtime publisher
+   * 
+   * @param node_base  NodeBaseInterface SharedPtr that is used in part of the setup.
+   * @param topic_name The topic for this publisher to publish on.
+   * @param qos 	The quality of service profile to pass on to the rmw implementation.
+   * @param options 	s Additional options for the created Publisher.
+   */
+  explicit RealtimePublisher(const rclcpp::Node::SharedPtr &	node,
+                             const std::string & 	topic_name,
+                             const rclcpp::QoS &  qos,
+                             const rclcpp::PublisherOptionsWithAllocator<AllocT> & options = rclcpp::PublisherOptionsWithAllocator<AllocT>() )
+  : is_running_(false), keep_running_(true), turn_(LOOP_NOT_STARTED)
+  {
+    publisher_ = node->create_publisher<Msg,AllocT>(topic_name,qos, options);
+    thread_ = std::thread(&RealtimePublisher::publishingLoop, this);
+  }	
 
   /**  \brief Constructor for the realtime publisher
    *
@@ -213,8 +235,10 @@ private:
   std::atomic<int> turn_;  // Who's turn is it to use msg_?
 };
 
-template<class Msg>
-using RealtimePublisherSharedPtr = std::shared_ptr<RealtimePublisher<Msg>>;
+template<
+    typename Msg,
+    typename AllocT = std::allocator<void>>
+using RealtimePublisherSharedPtr = std::shared_ptr<RealtimePublisher<Msg,AllocT>>;
 
 }  // namespace realtime_tools
 #endif  // REALTIME_TOOLS__REALTIME_PUBLISHER_H_
